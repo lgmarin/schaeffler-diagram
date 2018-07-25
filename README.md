@@ -1,1 +1,1 @@
-# schaeffler-diagram
+# Schaeffler Diagram Generator
