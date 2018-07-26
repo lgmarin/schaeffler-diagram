@@ -1,15 +1,21 @@
 # -*- coding: utf-8 -*-
 
+import matplotlib
 import matplotlib.pyplot as plt
 
 aws_e309 = {'name': "AWS E309", 'type': "Eletrodo Austenítico", 'C': 0.200, 'Cu': 0.750, 'Cr': 24.000, 'Mn': 1.750, 'Mo': 0.750, 'Ni': 13.000, 'N': 0.000, 'Si':0.475, 'Others': 0.000}
 aisi_316L = {'name': "AISI 316L", 'type': "Austenítico", 'C': 0.030, 'Cu': 0.000, 'Cr': 17.000, 'Mn': 2.000, 'Mo': 2.500, 'Ni': 12.000, 'N': 0.000, 'Si':1.000, 'Others': 0.000}
 
 class Schaeffler:
+    """ Class to calculate and generate Schaeffler Diagrams """
     def __init__(self, mb, ma, dilution=0.3):
         self.mb = mb
         self.ma = ma
         self.dilution = dilution
+        # Lines of the diagram [(x0,y0), (x1, y1)]
+        self.sf_lines = [[(3.1, 0), (0, 8.1)], [(20.46, 2.76), (0, 20.06)], [(12.23, 0), (40, 9.17)],\
+         [(6.96, 0), (34.65, 30)], [(26.37, 4.70), (0, 25.73)], [(15.06, 7.34), (37.52, 30)],\
+         [(15.82, 6.72), (40.0, 28.38)], [(16.68, 5.97), (40, 23.45)], [(17.74, 5.08), (40, 19.84)], [(18.64, 4.33), (40, 14.53)]]
 
     def calc_creq(self, material):
         creq = material['Cr'] + material['Mo'] + 1.5 * material['Si'] + 0.5 * material['Others']
@@ -38,20 +44,27 @@ class Schaeffler:
         print("Metal de Adição: {0}, Creq: {1:.1f}%, Nieq: {2:.1f}%, Tipo: {3}".format(aws_e309['name'], creq[1], nieq[1], aws_e309['type'])) 
         # Weld Metal (Welded Joint)
         print("Junta soldada: Creq: {0:.1f}%, Nieq: {1:.1f}%".format(weld[0], weld[1]))
-        plot = Plot(creq, nieq)
+        plot = Plot(creq, nieq, self.sf_lines)
         plot.create_plot(weld)
 
 class Plot:
-    def __init__(self, creq, nieq):
+    def __init__(self, creq, nieq, sf_lines):
         # Load Graph BKG
         self.creq = creq
         self.nieq = nieq
-        self.img = plt.imread("schaeffler_nogrid_2x.png")
         self.fig, self.ax = plt.subplots()
+        self.sf_lines = sf_lines
 
-    def create_plot(self, weld):
-        self.ax.imshow(self.img, extent=[0, 40, 0, 30])
+    def create_plot(self, weld, show_lines=True):
         self.ax.grid(color='k', linestyle='--', linewidth=1)
+        # Create background lines
+        if show_lines:
+            # Create a mplib collections from the lines points
+            lc = matplotlib.collections.LineCollection(self.sf_lines, colors='k', linewidths=1)
+            self.ax.add_collection(lc)
+        plt.axis('scaled')
+        plt.xlim(0,40) #<-- set the x axis limits
+        plt.ylim(0,30) #<-- set the y axis limits
         self.ax.plot(self.creq[0], self.nieq[0], 'b<', label="Metal de Base")
         self.ax.plot(self.creq[1], self.nieq[1], 'b>', label="Metal de Adição")
         self.ax.set(xlabel='Cromo Equivalente (%)', ylabel='Níquel Equivalente (%)', title="Diagrama de Schaeffler")
